@@ -9,12 +9,9 @@ from flask import (
     send_from_directory
 )
 
-from preprocessing import preprocess_image
-
-from model import predict_image
-from model import get_food_info
-
-from database import (
+from backend.preprocessing import preprocess_image
+from backend.model import predict_image, get_food_info
+from backend.database import (
     create_table,
     save_analysis,
     get_history,
@@ -23,43 +20,15 @@ from database import (
 
 
 # ============================================================
-# PROJECT PATHS
+# BASE DIRECTORIES
 # ============================================================
 
-BASE_DIR = os.path.dirname(
-    os.path.dirname(
-        os.path.abspath(__file__)
-    )
-)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 
-FRONTEND_DIR = os.path.join(
-    BASE_DIR,
-    "frontend"
-)
-
-
-UPLOAD_FOLDER = os.path.join(
-    BASE_DIR,
-    "uploads"
-)
-
-
-# ============================================================
-# CREATE UPLOAD FOLDER
-# ============================================================
-
-os.makedirs(
-    UPLOAD_FOLDER,
-    exist_ok=True
-)
-
-
-# ============================================================
-# INITIALIZE DATABASE
-# ============================================================
-
-create_table()
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 # ============================================================
@@ -71,15 +40,15 @@ app = Flask(
     template_folder=FRONTEND_DIR
 )
 
-
-app.config[
-    "UPLOAD_FOLDER"
-] = UPLOAD_FOLDER
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 
 
-app.config[
-    "MAX_CONTENT_LENGTH"
-] = 16 * 1024 * 1024
+# ============================================================
+# DATABASE
+# ============================================================
+
+create_table()
 
 
 # ============================================================
@@ -94,72 +63,49 @@ ALLOWED_EXTENSIONS = {
 
 
 def allowed_file(filename):
+    """
+    Check whether uploaded file has an allowed extension.
+    """
 
     return (
         "." in filename
-        and
-        filename.rsplit(
-            ".",
-            1
-        )[1].lower()
+        and filename.rsplit(".", 1)[1].lower()
         in ALLOWED_EXTENSIONS
     )
 
 
 # ============================================================
-# HOME
+# HOME PAGE
 # ============================================================
 
 @app.route("/")
 def home():
-
-    return render_template(
-        "index.html"
-    )
+    return render_template("index.html")
 
 
 # ============================================================
-# ANALYZE FOOD
+# ANALYZE FOOD IMAGE
 # ============================================================
 
-@app.route(
-    "/analyze",
-    methods=["POST"]
-)
+@app.route("/analyze", methods=["POST"])
 def analyze():
 
+    # Check whether file exists in request
     if "food_image" not in request.files:
+        return redirect(url_for("home"))
 
-        return redirect(
-            url_for("home")
-        )
+    file = request.files["food_image"]
 
-
-    file = request.files[
-        "food_image"
-    ]
-
-
+    # Check whether user selected a file
     if file.filename == "":
+        return redirect(url_for("home"))
 
-        return redirect(
-            url_for("home")
-        )
-
-
-    if not allowed_file(
-        file.filename
-    ):
-
+    # Check file extension
+    if not allowed_file(file.filename):
         return (
             "Invalid image format. "
             "Please upload JPG, JPEG or PNG."
         )
-
-
-    # --------------------------------------------------------
-    # Save uploaded image
-    # --------------------------------------------------------
 
     filename = file.filename
 
@@ -168,76 +114,52 @@ def analyze():
         filename
     )
 
-
-    file.save(
-        image_path
-    )
-
-
     try:
 
+        # Save uploaded image
+        file.save(image_path)
+
         # ----------------------------------------------------
-        # Preprocessing
+        # IMAGE PREPROCESSING
         # ----------------------------------------------------
 
-        preprocessing_result = (
-            preprocess_image(
-                image_path
-            )
+        preprocessing_result = preprocess_image(
+            image_path
         )
 
-
-        features = (
-            preprocessing_result[
-                "features"
-            ]
-        )
-
+        features = preprocessing_result["features"]
 
         # ----------------------------------------------------
-        # Prediction
+        # FOOD PREDICTION
         # ----------------------------------------------------
 
         prediction = predict_image(
             image_path
         )
 
-
-        if not prediction[
-            "success"
-        ]:
+        if not prediction["success"]:
 
             return (
                 "Prediction failed: "
-                +
-                prediction.get(
+                + prediction.get(
                     "error",
                     "Unknown error"
                 )
             )
 
-
-        food_name = prediction[
-            "food_name"
-        ]
-
-
-        confidence = prediction[
-            "confidence"
-        ]
-
+        food_name = prediction["food_name"]
+        confidence = prediction["confidence"]
 
         # ----------------------------------------------------
-        # Nutrition information
+        # NUTRITION INFORMATION
         # ----------------------------------------------------
 
         food_info = get_food_info(
             food_name
         )
 
-
         # ----------------------------------------------------
-        # Save history
+        # SAVE ANALYSIS HISTORY
         # ----------------------------------------------------
 
         save_analysis(
@@ -247,27 +169,22 @@ def analyze():
             food_info=food_info
         )
 
-
         # ----------------------------------------------------
-        # Show result
+        # SHOW RESULT
         # ----------------------------------------------------
 
         return render_template(
             "result.html",
-
             filename=filename,
-
             food_name=food_name,
-
             confidence=confidence,
-
             food_info=food_info,
-
             features=features
         )
 
-
     except Exception as e:
+
+        print("ERROR:", str(e))
 
         return (
             "Error while analyzing image: "
@@ -276,12 +193,10 @@ def analyze():
 
 
 # ============================================================
-# HISTORY
+# HISTORY PAGE
 # ============================================================
 
-@app.route(
-    "/history"
-)
+@app.route("/history")
 def history():
 
     history_data = get_history()
@@ -310,12 +225,10 @@ def delete_history_route():
 
 
 # ============================================================
-# SERVE UPLOADED IMAGE
+# SERVE UPLOADED IMAGES
 # ============================================================
 
-@app.route(
-    "/uploads/<filename>"
-)
+@app.route("/uploads/<filename>")
 def uploaded_file(filename):
 
     return send_from_directory(
@@ -325,12 +238,10 @@ def uploaded_file(filename):
 
 
 # ============================================================
-# ERROR: FILE TOO LARGE
+# FILE TOO LARGE ERROR
 # ============================================================
 
-@app.errorhandler(
-    413
-)
+@app.errorhandler(413)
 def file_too_large(error):
 
     return (
@@ -341,59 +252,47 @@ def file_too_large(error):
 
 
 # ============================================================
-# RUN SERVER
+# RUN APPLICATION
 # ============================================================
 
 if __name__ == "__main__":
 
-    print(
-        "\n========================================"
-    )
+    print()
+    print("========================================")
+    print("       FOOD ANALYSIS SYSTEM")
+    print("========================================")
 
-    print(
-        "       FOOD ANALYSIS SYSTEM"
-    )
+    print()
+    print("Base Directory:")
+    print(BASE_DIR)
 
-    print(
-        "========================================"
-    )
+    print()
+    print("Frontend:")
+    print(FRONTEND_DIR)
 
-    print(
-        "\nFrontend:"
-    )
+    print()
+    print("Uploads:")
+    print(UPLOAD_FOLDER)
 
-    print(
-        FRONTEND_DIR
-    )
+    print()
+    print("History:")
+    print("http://127.0.0.1:5000/history")
 
-    print(
-        "\nUploads:"
-    )
+    print()
+    print("Home:")
+    print("http://127.0.0.1:5000")
 
-    print(
-        UPLOAD_FOLDER
-    )
-
-    print(
-        "\nHistory:"
-    )
-
-    print(
-        "http://127.0.0.1:5000/history"
-    )
-
-    print(
-        "\nHome:"
-    )
-
-    print(
-        "http://127.0.0.1:5000"
-    )
-
-    print(
-        "\n========================================\n"
-    )
+    print()
+    print("========================================")
+    print()
 
     app.run(
-        debug=True
+        host="0.0.0.0",
+        port=int(
+            os.environ.get(
+                "PORT",
+                5000
+            )
+        ),
+        debug=False
     )
