@@ -1,14 +1,14 @@
 import os
-import cv2
 import pickle
-import warnings
+
 import pandas as pd
+import numpy as np
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 
-from preprocessing import preprocess_image
+from backend.preprocessing import preprocess_image
 
 
 # ============================================================
@@ -43,6 +43,11 @@ DATASET_PATH = os.path.join(
     "food_dataset.csv"
 )
 
+os.makedirs(
+    MODEL_DIR,
+    exist_ok=True
+)
+
 
 # ============================================================
 # FEATURE NAMES
@@ -61,126 +66,87 @@ FEATURE_NAMES = [
 
 
 # ============================================================
-# EXTRACT FEATURES FROM IMAGE
+# LOAD IMAGE DATASET
 # ============================================================
 
-def extract_image_features(image_path):
-    """
-    Preprocess image and extract visual features.
-    """
+def load_dataset():
 
-    result = preprocess_image(
-        image_path
-    )
-
-    features = result["features"]
-
-    return [
-        features["average_blue"],
-        features["average_green"],
-        features["average_red"],
-        features["average_hue"],
-        features["average_saturation"],
-        features["average_value"],
-        features["gray_mean"],
-        features["gray_std"]
-    ]
-
-
-# ============================================================
-# LOAD DATASET IMAGES
-# ============================================================
-
-def load_training_data():
-
-    X = []
-    y = []
+    features = []
+    labels = []
 
     if not os.path.exists(IMAGE_DIR):
-
-        print(
-            "ERROR: Image directory not found:"
+        raise FileNotFoundError(
+            f"Image dataset folder not found: {IMAGE_DIR}"
         )
 
-        print(
-            IMAGE_DIR
-        )
-
-        return X, y
-
-    print(
-        "\nLoading training images..."
-    )
-
-    food_classes = sorted(
-        [
-            folder
-            for folder in os.listdir(
-                IMAGE_DIR
-            )
-            if os.path.isdir(
-                os.path.join(
-                    IMAGE_DIR,
-                    folder
-                )
-            )
-        ]
-    )
-
-    for food_class in food_classes:
+    for class_name in sorted(
+        os.listdir(IMAGE_DIR)
+    ):
 
         class_path = os.path.join(
             IMAGE_DIR,
-            food_class
+            class_name
         )
 
-        image_files = [
-            file
-            for file in os.listdir(
-                class_path
-            )
-            if file.lower().endswith(
-                (
-                    ".jpg",
-                    ".jpeg",
-                    ".png"
-                )
-            )
-        ]
+        if not os.path.isdir(class_path):
+            continue
 
         print(
-            f"{food_class}: "
-            f"{len(image_files)} images"
+            f"Loading class: {class_name}"
         )
 
-        for image_file in image_files:
+        for filename in os.listdir(
+            class_path
+        ):
+
+            if not filename.lower().endswith(
+                (".jpg", ".jpeg", ".png")
+            ):
+                continue
 
             image_path = os.path.join(
                 class_path,
-                image_file
+                filename
             )
 
             try:
 
-                features = extract_image_features(
+                result = preprocess_image(
                     image_path
                 )
 
-                X.append(
-                    features
+                image_features = result[
+                    "features"
+                ]
+
+                feature_vector = [
+                    image_features[name]
+                    for name in FEATURE_NAMES
+                ]
+
+                features.append(
+                    feature_vector
                 )
 
-                y.append(
-                    food_class
+                labels.append(
+                    class_name
                 )
 
             except Exception as e:
 
                 print(
-                    f"Skipped {image_file}: {e}"
+                    f"Skipping {image_path}: {e}"
                 )
 
-    return X, y
+    if not features:
+        raise ValueError(
+            "No valid images found in dataset."
+        )
+
+    return (
+        np.array(features),
+        np.array(labels)
+    )
 
 
 # ============================================================
@@ -189,178 +155,91 @@ def load_training_data():
 
 def train_model():
 
+    print()
+    print("========================================")
+    print("       FOOD CLASSIFICATION MODEL")
+    print("========================================")
+
+    X, y = load_dataset()
+
+    print()
     print(
-        "\n========================================"
+        f"Total images: {len(X)}"
     )
 
     print(
-        "       FOOD CLASSIFICATION MODEL"
+        f"Number of classes: {len(np.unique(y))}"
     )
 
     print(
-        "========================================"
-    )
-
-    X, y = load_training_data()
-
-    if len(X) == 0:
-
-        print(
-            "\nERROR: No training images found."
-        )
-
-        return
-
-    print(
-        f"\nImages found: {len(X)}"
-    )
-
-    classes = sorted(
-        list(
-            set(y)
-        )
-    )
-
-    print(
-        f"Food classes: {len(classes)}"
-    )
-
-    for food_class in classes:
-
-        count = y.count(
-            food_class
-        )
-
-        print(
-            f"{food_class}: "
-            f"{count} images"
-        )
-
-    print(
-        "\nCreating training/testing split..."
+        f"Classes: {sorted(np.unique(y))}"
     )
 
     # --------------------------------------------------------
-    # Check whether stratified split is possible
+    # TRAIN / TEST SPLIT
     # --------------------------------------------------------
 
-    class_counts = {
-        food_class: y.count(food_class)
-        for food_class in classes
-    }
-
-    minimum_images = min(
-        class_counts.values()
-    )
-
-    if minimum_images >= 5:
-
-        X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, y_test = (
+        train_test_split(
             X,
             y,
             test_size=0.20,
             random_state=42,
             stratify=y
         )
+    )
 
-        print(
-            f"Training images: {len(X_train)}"
-        )
+    # --------------------------------------------------------
+    # RANDOM FOREST
+    # --------------------------------------------------------
 
-        print(
-            f"Testing images: {len(X_test)}"
-        )
+    model = RandomForestClassifier(
+        n_estimators=200,
+        random_state=42,
+        class_weight="balanced"
+    )
 
-        # ----------------------------------------------------
-        # Random Forest
-        # ----------------------------------------------------
+    model.fit(
+        X_train,
+        y_train
+    )
 
-        model = RandomForestClassifier(
-            n_estimators=200,
-            random_state=42,
-            class_weight="balanced"
-        )
+    # --------------------------------------------------------
+    # EVALUATION
+    # --------------------------------------------------------
 
-        print(
-            "\nTraining Random Forest model..."
-        )
+    y_pred = model.predict(
+        X_test
+    )
 
-        model.fit(
-            X_train,
-            y_train
-        )
+    accuracy = accuracy_score(
+        y_test,
+        y_pred
+    )
 
-        # ----------------------------------------------------
-        # Prediction
-        # ----------------------------------------------------
+    print()
+    print(
+        f"Accuracy: {accuracy * 100:.2f}%"
+    )
 
-        y_pred = model.predict(
-            X_test
-        )
-
-        accuracy = accuracy_score(
+    print()
+    print("Classification Report:")
+    print(
+        classification_report(
             y_test,
             y_pred
         )
-
-        print(
-            "\n========================================"
-        )
-
-        print(
-            f"Model Accuracy: "
-            f"{accuracy * 100:.2f} %"
-        )
-
-        print(
-            "========================================"
-        )
-
-        print(
-            "\nClassification Report:"
-        )
-
-        print(
-            classification_report(
-                y_test,
-                y_pred
-            )
-        )
-
-    else:
-
-        warnings.warn(
-            "Some classes contain fewer than "
-            "5 images. Training on all images."
-        )
-
-        model = RandomForestClassifier(
-            n_estimators=200,
-            random_state=42,
-            class_weight="balanced"
-        )
-
-        print(
-            "\nTraining Random Forest model..."
-        )
-
-        model.fit(
-            X,
-            y
-        )
-
-    # ========================================================
-    # SAVE MODEL
-    # ========================================================
-
-    os.makedirs(
-        MODEL_DIR,
-        exist_ok=True
     )
+
+    # --------------------------------------------------------
+    # SAVE MODEL
+    # --------------------------------------------------------
 
     model_data = {
         "model": model,
-        "classes": classes,
+        "classes": sorted(
+            np.unique(y)
+        ),
         "feature_names": FEATURE_NAMES
     }
 
@@ -374,25 +253,21 @@ def train_model():
             file
         )
 
+    print()
     print(
-        "\n========================================"
+        f"Model saved to: {MODEL_PATH}"
     )
 
-    print(
-        "Model saved successfully!"
-    )
+    print()
+    print("========================================")
+    print("       MODEL TRAINING COMPLETE")
+    print("========================================")
 
-    print(
-        MODEL_PATH
-    )
-
-    print(
-        "========================================"
-    )
+    return model_data
 
 
 # ============================================================
-# LOAD TRAINED MODEL
+# LOAD SAVED MODEL
 # ============================================================
 
 def load_model():
@@ -402,8 +277,7 @@ def load_model():
     ):
 
         raise FileNotFoundError(
-            "Trained model not found. "
-            "Please train the model first."
+            f"Model file not found: {MODEL_PATH}"
         )
 
     with open(
@@ -426,56 +300,80 @@ def predict_image(image_path):
 
     try:
 
+        # Load saved model
         model_data = load_model()
 
-        model = model_data["model"]
+        model = model_data[
+            "model"
+        ]
 
-        classes = model_data["classes"]
+        feature_names = model_data[
+            "feature_names"
+        ]
 
-        # Extract image features
-        features = extract_image_features(
+        # Preprocess image
+        result = preprocess_image(
             image_path
         )
 
-        # Convert to dataframe
-        features_df = pd.DataFrame(
-            [features],
-            columns=FEATURE_NAMES
+        image_features = result[
+            "features"
+        ]
+
+        # Create feature vector
+        feature_vector = [
+            image_features[name]
+            for name in feature_names
+        ]
+
+        feature_array = np.array(
+            [feature_vector]
         )
 
         # Prediction
         prediction = model.predict(
-            features_df
-        )[0]
-
-        # Probability
-        probabilities = model.predict_proba(
-            features_df
-        )[0]
-
-        max_probability = max(
-            probabilities
+            feature_array
         )
 
-        confidence = round(
-            float(max_probability) * 100,
-            2
+        food_name = str(
+            prediction[0]
         )
+
+        # Confidence
+        confidence = 0.0
+
+        if hasattr(
+            model,
+            "predict_proba"
+        ):
+
+            probabilities = (
+                model.predict_proba(
+                    feature_array
+                )[0]
+            )
+
+            confidence = (
+                float(
+                    np.max(
+                        probabilities
+                    )
+                ) * 100
+            )
 
         return {
             "success": True,
-            "food_name": str(
-                prediction
-            ),
-            "confidence": confidence
+            "food_name": food_name,
+            "confidence": round(
+                confidence,
+                2
+            )
         }
 
     except Exception as e:
 
         return {
             "success": False,
-            "food_name": None,
-            "confidence": 0,
             "error": str(e)
         }
 
@@ -486,67 +384,39 @@ def predict_image(image_path):
 
 def get_food_info(food_name):
 
-    """
-    Get nutritional information from
-    dataset/food_dataset.csv
-    """
-
     if not os.path.exists(
         DATASET_PATH
     ):
-
-        print(
-            "Nutrition dataset not found:"
-        )
-
-        print(
-            DATASET_PATH
-        )
 
         return None
 
     try:
 
-        df = pd.read_csv(
+        data = pd.read_csv(
             DATASET_PATH
         )
 
-        # Check required column
-        if "food_name" not in df.columns:
-
-            print(
-                "ERROR: food_name column "
-                "not found in dataset."
-            )
-
+        if "food_name" not in data.columns:
             return None
 
-        # Case-insensitive search
-        result = df[
-            df["food_name"]
+        matches = data[
+            data["food_name"]
             .astype(str)
-            .str.strip()
             .str.lower()
-            ==
-            str(food_name)
-            .strip()
-            .lower()
+            == str(food_name).lower()
         ]
 
-        if result.empty:
-
+        if matches.empty:
             return None
 
-        return result.iloc[0].to_dict()
+        row = matches.iloc[0]
+
+        return row.to_dict()
 
     except Exception as e:
 
         print(
-            "Error reading nutrition dataset:"
-        )
-
-        print(
-            e
+            f"Nutrition lookup error: {e}"
         )
 
         return None
