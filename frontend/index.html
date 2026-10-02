@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>FoodLens AI | Food Analysis</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family:
+                Inter,
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background: #06110c;
+            color: #f5fff8;
+
+            overflow-x: hidden;
+        }
+
+        /* -------------------------
+           Background
+        ------------------------- */
+
+        .background {
+            position: fixed;
+            inset: 0;
+
+            overflow: hidden;
+
+            z-index: -10;
+
+            background:
+                radial-gradient(
+                    circle at 15% 20%,
+                    rgba(44, 255, 139, 0.12),
+                    transparent 30%
+                ),
+
+                radial-gradient(
+                    circle at 85% 10%,
+                    rgba(0, 170, 255, 0.10),
+                    transparent 30%
+                ),
+
+                #06110c;
+        }
+
+        .orb {
+            position: absolute;
+
+            width: 420px;
+            height: 420px;
+
+            border-radius: 50%;
+
+            filter: blur(100px);
+
+            opacity: 0.15;
+
+            animation:
+                moveOrb 12s ease-in-out infinite;
+        }
+
+        .orb1 {
+            background: #35ff91;
+
+            top: -180px;
+            left: -120px;
+        }
+
+        .orb2 {
+            background: #008cff;
+
+            bottom: -200px;
+            right: -120px;
+
+            animation-delay: -5s;
+        }
+
+        @keyframes moveOrb {
+
+            0% {
+                transform: translate(0, 0);
+            }
+
+            50% {
+                transform: translate(80px, 50px);
+            }
+
+            100% {
+                transform: translate(0, 0);
+            }
+        }
+
+        /* -------------------------
+           Navigation
+        ------------------------- */
+
+        nav {
+
+            height: 80px;
+
+            max-width: 1200px;
+
+            margin: auto;
+
+            padding: 0 25px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+        }
+
+        .brand {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            font-size: 20px;
+
+            font-weight: 800;
+        }
+
+        .logo {
+
+            width: 42px;
+            height: 42px;
+
+            border-radius: 14px;
+
+            display: grid;
+
+            place-items: center;
+
+            font-size: 22px;
+
+            color: #04120a;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #8affbd,
+                    #2bd87d
+                );
+
+            box-shadow:
+                0 0 35px
+                rgba(80, 255, 160, 0.3);
+
+            animation: logoPulse 3s infinite;
+        }
+
+        @keyframes logoPulse {
+
+            50% {
+
+                transform: rotate(8deg)
+                           scale(1.06);
+
+                box-shadow:
+                    0 0 50px
+                    rgba(80, 255, 160, 0.5);
+            }
+        }
+
+        .nav-links {
+
+            display: flex;
+
+            gap: 30px;
+        }
+
+        .nav-links a {
+
+            color: #91a99c;
+
+            text-decoration: none;
+
+            font-size: 14px;
+
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+
+            color: #7dffb2;
+
+            transform: translateY(-2px);
+        }
+
+        .status {
+
+            padding: 10px 16px;
+
+            border-radius: 50px;
+
+            border:
+                1px solid
+                rgba(125, 255, 178, 0.2);
+
+            background:
+                rgba(125, 255, 178, 0.05);
+
+            color: #7dffb2;
+
+            font-size: 12px;
+
+            font-weight: 700;
+        }
+
+        /* -------------------------
+           Hero
+        ------------------------- */
+
+        main {
+
+            max-width: 1200px;
+
+            margin: auto;
+
+            padding:
+                60px 25px
+                100px;
+        }
+
+        .hero {
+
+            min-height: 620px;
+
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+            gap: 70px;
+
+            align-items: center;
+        }
+
+        .badge {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            padding:
+                9px 14px;
+
+            border-radius: 50px;
+
+            background:
+                rgba(125, 255, 178, 0.06);
+
+            border:
+                1px solid
+                rgba(125, 255, 178, 0.2);
+
+            color: #7dffb2;
+
+            font-size: 12px;
+
+            font-weight: 700;
+
+            letter-spacing: 0.5px;
+        }
+
+        .badge-dot {
+
+            width: 7px;
+            height: 7px;
+
+            border-radius: 50%;
+
+            background: #7dffb2;
+
+            box-shadow:
+                0 0 15px
+                #7dffb2;
+
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .hero h1 {
+
+            font-size:
+                clamp(
+                    50px,
+                    7vw,
+                    90px
+                );
+
+            line-height: 0.95;
+
+            letter-spacing: -5px;
+
+            margin:
+                25px 0;
+        }
+
+        .gradient {
+
+            background:
+                linear-gradient(
+                    100deg,
+                    #ffffff,
+                    #7dffb2
+                );
+
+            -webkit-background-clip: text;
+
+            background-clip: text;
+
+            color: transparent;
+        }
+
+        .hero-text {
+
+            max-width: 580px;
+
+            color: #9bb2a5;
+
+            font-size: 18px;
+
+            line-height: 1.8;
+        }
+
+        .stats {
+
+            display: flex;
+
+            gap: 40px;
+
+            margin-top: 35px;
+        }
+
+        .stat strong {
+
+            font-size: 25px;
+
+            color: #ffffff;
+        }
+
+        .stat span {
+
+            display: block;
+
+            margin-top: 5px;
+
+            font-size: 12px;
+
+            color: #81988c;
+        }
+
+        /* -------------------------
+           Upload Card
+        ------------------------- */
+
+        .upload-card {
+
+            padding: 18px;
+
+            border-radius: 32px;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(255,255,255,0.09),
+                    rgba(255,255,255,0.025)
+                );
+
+            border:
+                1px solid
+                rgba(255,255,255,0.1);
+
+            box-shadow:
+                0 35px 100px
+                rgba(0,0,0,0.45);
+
+            backdrop-filter: blur(25px);
+
+            animation:
+                floatingCard
+                6s
+                ease-in-out
+                infinite;
+        }
+
+        @keyframes floatingCard {
+
+            0% {
+                transform:
+                    translateY(0)
+                    rotate(1deg);
+            }
+
+            50% {
+                transform:
+                    translateY(-12px)
+                    rotate(-1deg);
+            }
+
+            100% {
+                transform:
+                    translateY(0)
+                    rotate(1deg);
+            }
+        }
+
+        .upload-area {
+
+            min-height: 470px;
+
+            border:
+                1px dashed
+                rgba(125,255,178,0.35);
+
+            border-radius: 24px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+            align-items: center;
+
+            text-align: center;
+
+            padding: 30px;
+
+            transition: 0.4s;
+        }
+
+        .upload-area.dragging {
+
+            background:
+                rgba(125,255,178,0.08);
+
+            transform: scale(0.98);
+
+            border-color:
+                #7dffb2;
+        }
+
+        .food-icon {
+
+            width: 110px;
+            height: 110px;
+
+            border-radius: 32px;
+
+            display: grid;
+
+            place-items: center;
+
+            font-size: 58px;
+
+            background:
+                rgba(125,255,178,0.08);
+
+            margin-bottom: 25px;
+
+            animation:
+                foodFloat
+                3s
+                ease-in-out
+                infinite;
+        }
+
+        @keyframes foodFloat {
+
+            50% {
+                transform:
+                    translateY(-10px)
+                    rotate(3deg);
+            }
+        }
+
+        .upload-area h2 {
+
+            font-size: 26px;
+
+            margin-bottom: 10px;
+        }
+
+        .upload-area p {
+
+            color: #91a99c;
+
+            line-height: 1.7;
+
+            font-size: 14px;
+
+            margin-bottom: 25px;
+        }
+
+        .upload-button {
+
+            display: inline-block;
+
+            padding:
+                15px 24px;
+
+            border-radius: 14px;
+
+            cursor: pointer;
+
+            font-weight: 800;
+
+            color: #06110c;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #8affbd,
+                    #35d98a
+                );
+
+            box-shadow:
+                0 15px 35px
+                rgba(80,255,160,0.15);
+
+            transition: 0.3s;
+        }
+
+        .upload-button:hover {
+
+            transform:
+                translateY(-4px)
+                scale(1.02);
+
+            box-shadow:
+                0 20px 45px
+                rgba(80,255,160,0.28);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-name {
+
+            margin-top: 18px;
+
+            color: #7dffb2;
+
+            font-size: 13px;
+
+            min-height: 18px;
+        }
+
+        .analyze-button {
+
+            margin-top: 15px;
+
+            padding:
+                13px 25px;
+
+            border: none;
+
+            border-radius: 12px;
+
+            background:
+                #ffffff;
+
+            color: #06110c;
+
+            font-weight: 800;
+
+            cursor: pointer;
+
+            transition: 0.3s;
+        }
+
+        .analyze-button:hover {
+
+            transform:
+                translateY(-3px);
+
+            background: #7dffb2;
+        }
+
+        /* -------------------------
+           Features
+        ------------------------- */
+
+        .section {
+
+            padding-top: 100px;
+        }
+
+        .section h2 {
+
+            font-size: 44px;
+
+            letter-spacing: -2px;
+
+            margin-bottom: 12px;
+        }
+
+        .section-description {
+
+            max-width: 650px;
+
+            color: #91a99c;
+
+            line-height: 1.7;
+        }
+
+        .cards {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 20px;
+
+            margin-top: 35px;
+        }
+
+        .card {
+
+            padding: 30px;
+
+            border-radius: 24px;
+
+            background:
+                rgba(255,255,255,0.035);
+
+            border:
+                1px solid
+                rgba(255,255,255,0.08);
+
+            transition: 0.4s;
+
+            position: relative;
+
+            overflow: hidden;
+        }
+
+        .card::before {
+
+            content: "";
+
+            position: absolute;
+
+            width: 150px;
+            height: 150px;
+
+            background:
+                rgba(125,255,178,0.08);
+
+            border-radius: 50%;
+
+            filter: blur(45px);
+
+            top: -80px;
+            right: -80px;
+        }
+
+        .card:hover {
+
+            transform:
+                translateY(-10px);
+
+            border-color:
+                rgba(125,255,178,0.25);
+
+            background:
+                rgba(255,255,255,0.06);
+        }
+
+        .card-icon {
+
+            font-size: 32px;
+        }
+
+        .card h3 {
+
+            margin:
+                18px 0 10px;
+
+            font-size: 20px;
+        }
+
+        .card p {
+
+            color: #91a99c;
+
+            font-size: 14px;
+
+            line-height: 1.7;
+        }
+
+        /* -------------------------
+           Pipeline
+        ------------------------- */
+
+        .pipeline {
+
+            margin-top: 35px;
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap: 15px;
+        }
+
+        .step {
+
+            padding: 22px;
+
+            border:
+                1px solid
+                rgba(255,255,255,0.08);
+
+            border-radius: 18px;
+
+            background:
+                rgba(255,255,255,0.025);
+
+            transition: 0.3s;
+        }
+
+        .step:hover {
+
+            transform:
+                translateY(-6px);
+
+            border-color:
+                rgba(125,255,178,0.2);
+        }
+
+        .step-number {
+
+            color: #7dffb2;
+
+            font-size: 12px;
+
+            font-weight: 800;
+        }
+
+        .step h4 {
+
+            margin-top: 12px;
+
+            font-size: 16px;
+        }
+
+        /* -------------------------
+           Footer
+        ------------------------- */
+
+        footer {
+
+            margin-top: 100px;
+
+            padding:
+                30px 0;
+
+            border-top:
+                1px solid
+                rgba(255,255,255,0.08);
+
+            display: flex;
+
+            justify-content: space-between;
+
+            color: #71877b;
+
+            font-size: 13px;
+        }
+
+        /* -------------------------
+           Responsive
+        ------------------------- */
+
+        @media(max-width: 850px) {
+
+            .nav-links,
+            .status {
+                display: none;
+            }
+
+            .hero {
+
+                grid-template-columns: 1fr;
+
+                gap: 45px;
+            }
+
+            .hero h1 {
+
+                font-size: 58px;
+
+                letter-spacing: -4px;
+            }
+
+            .cards {
+
+                grid-template-columns: 1fr;
+            }
+
+            .pipeline {
+
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+            .upload-card {
+
+                animation: none;
+            }
+        }
+
+        @media(max-width: 500px) {
+
+            main {
+
+                padding:
+                    35px 18px 70px;
+            }
+
+            .stats {
+
+                gap: 20px;
+            }
+
+            .hero h1 {
+
+                font-size: 48px;
+            }
+
+            .pipeline {
+
+                grid-template-columns: 1fr;
+            }
+
+            footer {
+
+                flex-direction: column;
+
+                gap: 10px;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <!-- Background -->
+
+    <div class="background">
+
+        <div class="orb orb1"></div>
+
+        <div class="orb orb2"></div>
+
+    </div>
+
+
+    <!-- Navigation -->
+
+    <nav>
+
+        <div class="brand">
+
+            <div class="logo">
+                ✦
+            </div>
+
+            <span>
+                FoodLens AI
+            </span>
+
+        </div>
+
+
+        <div class="nav-links">
+
+            <a href="#analyze">
+                Analyze
+            </a>
+
+            <a href="#features">
+                Features
+            </a>
+
+            <a href="#pipeline">
+                How it works
+            </a>
+
+        </div>
+
+
+        <div class="status">
+            ● AI FOOD INTELLIGENCE
+        </div>
+
+    </nav>
+
+
+    <main>
+
+
+        <!-- HERO -->
+
+        <section
+            class="hero"
+            id="analyze"
+        >
+
+            <div>
+
+                <span class="badge">
+
+                    <span class="badge-dot"></span>
+
+                    COMPUTER VISION · NUTRITION
+
+                </span>
+
+
+                <h1>
+
+                    Understand
+
+                    <br>
+
+                    <span class="gradient">
+                        what you eat.
+                    </span>
+
+                </h1>
+
+
+                <p class="hero-text">
+
+                    An intelligent food analysis platform
+                    that transforms a simple food image
+                    into meaningful information using
+                    computer vision and machine learning.
+
+                </p>
+
+
+                <div class="stats">
+
+                    <div class="stat">
+
+                        <strong>
+                            AI
+                        </strong>
+
+                        <span>
+                            Powered analysis
+                        </span>
+
+                    </div>
+
+
+                    <div class="stat">
+
+                        <strong>
+                            CV
+                        </strong>
+
+                        <span>
+                            Image processing
+                        </span>
+
+                    </div>
+
+
+                    <div class="stat">
+
+                        <strong>
+                            ML
+                        </strong>
+
+                        <span>
+                            Classification
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Upload -->
+
+            <div class="upload-card">
+
+                <form
+                    action="/analyze"
+                    method="POST"
+                    enctype="multipart/form-data"
+                    id="uploadForm"
+                >
+
+                    <div
+                        class="upload-area"
+                        id="dropArea"
+                    >
+
+                        <div class="food-icon">
+                            🍜
+                        </div>
+
+
+                        <h2>
+                            Analyze your food
+                        </h2>
+
+
+                        <p>
+
+                            Upload a food image and let
+                            FoodLens AI analyze it.
+
+                            <br>
+
+                            JPG, JPEG and PNG supported.
+
+                        </p>
+
+
+                        <label
+                            for="foodImage"
+                            class="upload-button"
+                        >
+
+                            📷 Choose Food Image
+
+                        </label>
+
+
+                        <input
+                            id="foodImage"
+                            name="food_image"
+                            type="file"
+                            accept="image/png,image/jpeg,image/jpg"
+                            required
+                        >
+
+
+                        <div
+                            class="file-name"
+                            id="fileName"
+                        >
+                        </div>
+
+
+                        <button
+                            type="submit"
+                            class="analyze-button"
+                            id="analyzeButton"
+                            style="display:none"
+                        >
+
+                            🔍 Analyze Food
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </section>
+
+
+        <!-- FEATURES -->
+
+        <section
+            class="section"
+            id="features"
+        >
+
+            <h2>
+                Built for intelligent analysis.
+            </h2>
+
+
+            <p class="section-description">
+
+                A complete pipeline connecting
+                computer vision, machine learning
+                and structured nutritional data.
+
+            </p>
+
+
+            <div class="cards">
+
+
+                <article class="card">
+
+                    <div class="card-icon">
+                        📷
+                    </div>
+
+                    <h3>
+                        Image Processing
+                    </h3>
+
+                    <p>
+
+                        Process food images using
+                        resizing, normalization,
+                        enhancement and OpenCV
+                        based preprocessing.
+
+                    </p>
+
+                </article>
+
+
+                <article class="card">
+
+                    <div class="card-icon">
+                        🧠
+                    </div>
+
+                    <h3>
+                        Food Classification
+                    </h3>
+
+                    <p>
+
+                        Machine learning techniques
+                        can identify selected food
+                        categories from image features.
+
+                    </p>
+
+                </article>
+
+
+                <article class="card">
+
+                    <div class="card-icon">
+                        🥗
+                    </div>
+
+                    <h3>
+                        Nutrition Insights
+                    </h3>
+
+                    <p>
+
+                        Connect recognized foods
+                        with calories, protein,
+                        carbohydrates, fat and fiber.
+
+                    </p>
+
+                </article>
+
+
+            </div>
+
+        </section>
+
+
+        <!-- PIPELINE -->
+
+        <section
+            class="section"
+            id="pipeline"
+        >
+
+            <h2>
+                From image to insight.
+            </h2>
+
+
+            <p class="section-description">
+
+                The FoodLens workflow processes
+                the uploaded image through multiple
+                stages before producing the result.
+
+            </p>
+
+
+            <div class="pipeline">
+
+
+                <div class="step">
+
+                    <span class="step-number">
+                        STEP 01
+                    </span>
+
+                    <h4>
+                        Upload
+                    </h4>
+
+                </div>
+
+
+                <div class="step">
+
+                    <span class="step-number">
+                        STEP 02
+                    </span>
+
+                    <h4>
+                        Preprocess
+                    </h4>
+
+                </div>
+
+
+                <div class="step">
+
+                    <span class="step-number">
+                        STEP 03
+                    </span>
+
+                    <h4>
+                        Classify
+                    </h4>
+
+                </div>
+
+
+                <div class="step">
+
+                    <span class="step-number">
+                        STEP 04
+                    </span>
+
+                    <h4>
+                        Nutrition
+                    </h4>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+        <!-- FOOTER -->
+
+        <footer>
+
+            <span>
+                FoodLens AI · Food Analysis Project
+            </span>
+
+            <span>
+                Python · Flask · OpenCV · Machine Learning
+            </span>
+
+        </footer>
+
+
+    </main>
+
+
+    <script>
+
+        const fileInput =
+            document.getElementById("foodImage");
+
+        const fileName =
+            document.getElementById("fileName");
+
+        const analyzeButton =
+            document.getElementById("analyzeButton");
+
+        const dropArea =
+            document.getElementById("dropArea");
+
+
+        /* -------------------------
+           File Selection
+        ------------------------- */
+
+        fileInput.addEventListener(
+            "change",
+            function () {
+
+                if (fileInput.files.length > 0) {
+
+                    const file =
+                        fileInput.files[0];
+
+                    fileName.textContent =
+                        "✓ " + file.name;
+
+                    analyzeButton.style.display =
+                        "inline-block";
+                }
+
+            }
+        );
+
+
+        /* -------------------------
+           Drag Enter
+        ------------------------- */
+
+        [
+            "dragenter",
+            "dragover"
+        ].forEach(
+            eventName => {
+
+                dropArea.addEventListener(
+                    eventName,
+                    function (event) {
+
+                        event.preventDefault();
+
+                        dropArea.classList.add(
+                            "dragging"
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+
+        /* -------------------------
+           Drag Leave
+        ------------------------- */
+
+        [
+            "dragleave",
+            "drop"
+        ].forEach(
+            eventName => {
+
+                dropArea.addEventListener(
+                    eventName,
+                    function (event) {
+
+                        event.preventDefault();
+
+                        dropArea.classList.remove(
+                            "dragging"
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+
+        /* -------------------------
+           Drop Image
+        ------------------------- */
+
+        dropArea.addEventListener(
+            "drop",
+            function (event) {
+
+                const files =
+                    event.dataTransfer.files;
+
+                if (
+                    files.length > 0 &&
+                    files[0].type.startsWith("image/")
+                ) {
+
+                    const dataTransfer =
+                        new DataTransfer();
+
+                    dataTransfer.items.add(
+                        files[0]
+                    );
+
+                    fileInput.files =
+                        dataTransfer.files;
+
+                    fileName.textContent =
+                        "✓ " + files[0].name;
+
+                    analyzeButton.style.display =
+                        "inline-block";
+                }
+
+            }
+        );
+
+
+        /* -------------------------
+           Submit Animation
+        ------------------------- */
+
+        document
+            .getElementById("uploadForm")
+            .addEventListener(
+                "submit",
+                function () {
+
+                    analyzeButton.textContent =
+                        "⏳ Uploading...";
+
+                    analyzeButton.disabled =
+                        true;
+
+                }
+            );
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,3 @@
+Images from the Fruits-360 dataset (Horea94/Fruit-Images-Dataset on GitHub), licensed CC BY-SA 4.0.
+https://github.com/Horea94/Fruit-Images-Dataset
+Photos are 100x100 studio shots on a white background.
